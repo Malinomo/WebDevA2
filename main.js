@@ -1,8 +1,7 @@
 "use strict";
 
-// Populated by initGame() and initFortGame() below — lets the castle icon in
-// the nav fully reset both the quiz and the fort game, not just navigate
-// home, without needing a browser refresh.
+// used by the castle icon in the nav to fully reset both games (set inside
+// initGame/initFortGame below)
 let resetQuizFn = null;
 let resetFortFn = null;
 
@@ -13,26 +12,40 @@ function prefersReducedMotion() {
   );
 }
 
-// Real audio files (in addition to the Web Audio API tones used later for
-// quiz feedback) — one for moving between pages, one for the portcullis
-// gate opening. Created once and reused rather than a new Audio() per play.
+// sound effects - reused Audio objects instead of making a new one each play
 const pageTransitionSound = new Audio("Audio/Walk-On-Stone.mp3");
+
+// background music, loops forever. can't autoplay until the user clicks
+// something first, so it actually starts inside the portcullis intro below
+const backgroundMusic = new Audio("Audio/Medieval-Castle.mp3");
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.32;
+let backgroundMusicStarted = false;
+
+function startBackgroundMusic() {
+  if (backgroundMusicStarted) return;
+  backgroundMusicStarted = true;
+  backgroundMusic.play().catch(function () {
+    backgroundMusicStarted = false; // retry next interaction if blocked
+  });
+}
 const gateOpeningSound = new Audio("Audio/Gate-Opening.mp3");
 const swordClashSound = new Audio("Audio/Sword-Clash.mp3");
 const arrowSound = new Audio("Audio/Arrow.mp3");
 const ramSlamSound = new Audio("Audio/Battering-Ram_Slam.mp3");
+const lancerSound = new Audio("Audio/Lancer.mp3");
+const soldierCrySound = new Audio("Audio/Soldier-Cry.mp3");
+const logRollSound = new Audio("Audio/Log.mp3");
+// heavy units get their own clanking sound each (made in spawnEnemy) since
+// more than one heavy can be walking at once
 
 function playSound(audioEl) {
-  if (prefersReducedMotion()) return; // treat as a "reduce extra stimulus" signal too
+  if (prefersReducedMotion()) return;
   try {
-    audioEl.currentTime = 0; // restart cleanly even if triggered again quickly
-    audioEl.play().catch(function () {
-      // Autoplay can be blocked before the user has interacted with the page
-      // at all (e.g. the very first show("home") on load) — fail silently,
-      // audio is a nice-to-have, not a functional requirement.
-    });
+    audioEl.currentTime = 0; // restart if spammed
+    audioEl.play().catch(function () {}); // ignore autoplay block
   } catch (err) {
-    // unsupported/blocked — fail silently
+    // ignore
   }
 }
 
@@ -41,45 +54,41 @@ function playSound(audioEl) {
 // (same pattern as Prac08: hideall() + show())
 // ============================================
 
-const homebtn = document.querySelector("#homebtn"); // logo icon, top-left of nav
-const navhomebtn = document.querySelector("#navhomebtn"); // "Home" link inside the menu
-const herobtn = document.querySelector("#herobtn"); // "Enter the castle" button on Home
+const homebtn = document.querySelector("#homebtn"); // nav logo icon
+const navhomebtn = document.querySelector("#navhomebtn"); // "Home" link in menu
+const herobtn = document.querySelector("#herobtn"); // "Enter the castle" button
 const anatomybtn = document.querySelector("#anatomybtn");
 const defensesbtn = document.querySelector("#defensesbtn");
 const evolutionbtn = document.querySelector("#evolutionbtn");
 const gamebtn = document.querySelector("#gamebtn");
 
 const navButtons = document.querySelectorAll("#primary-menu button");
-var allpages = document.querySelectorAll(".page"); // select all subtopic pages
+var allpages = document.querySelectorAll(".page");
 
-// Tracks whether the full gate intro has already finished (set in
-// completeIntro()) and which page is currently showing, so the quick wipe
-// only plays on real page-to-page navigation afterward — never during the
-// initial intro itself, and never when re-clicking the page you're already on.
+// tracks if the gate intro already played + which page we're on, so the
+// quick page-wipe only plays on real navigation, not during the intro
 let introComplete = false;
 let currentPageId = null;
 
-function hideall() { // function to hide all pages
-  for (let onepage of allpages) { // go through all subtopic pages
-    onepage.style.display = "none"; // hide it
+function hideall() {
+  for (let onepage of allpages) {
+    onepage.style.display = "none";
   }
 }
 
-function show(pageId) { // function to show selected page by its id
+function show(pageId) {
   hideall();
   let onepage = document.querySelector("#" + pageId);
-  // Home needs "flex" (to center its hero box); every other page just needs "block".
-  onepage.style.display = (pageId === "home") ? "flex" : "block";
+  onepage.style.display = (pageId === "home") ? "flex" : "block"; // home needs flex to center
 
-  playSound(pageTransitionSound); // footstep-on-stone sound for moving between pages
+  playSound(pageTransitionSound);
 
-  // Quick reused portcullis wipe (fast, no audio) — only after the main
-  // intro has already played once, and only when actually changing pages.
+  // quick portcullis wipe when switching pages (not during the first intro)
   if (introComplete && pageId !== currentPageId) {
     const overlay = document.getElementById("portcullis-overlay");
     if (overlay) {
       overlay.classList.remove("quick-wipe");
-      void overlay.offsetWidth; // force reflow so re-triggering works if clicked again quickly
+      void overlay.offsetWidth; // force reflow so it can replay
       overlay.classList.add("quick-wipe");
       setTimeout(function () {
         overlay.classList.remove("quick-wipe");
@@ -88,7 +97,7 @@ function show(pageId) { // function to show selected page by its id
   }
   currentPageId = pageId;
 
-  // mark the matching nav button as the current page for styling + accessibility
+  // highlight the active nav button
   navButtons.forEach(function (btn) {
     btn.removeAttribute("aria-current");
   });
@@ -96,18 +105,14 @@ function show(pageId) { // function to show selected page by its id
   const activeBtn = document.getElementById(activeBtnId);
   if (activeBtn) activeBtn.setAttribute("aria-current", "page");
 
-  // close the mobile menu after navigating, and return scroll to the top
-  // of the newly shown page
-  setMenuState(false);
+  setMenuState(false); // close mobile menu after navigating
   window.scrollTo(0, 0);
 }
 
-// Listen for clicks on each nav button (and the logo/hero shortcuts), show the matching page
 homebtn.addEventListener("click", function () {
   show("home");
-  // ABILITY TO RESET APP WITHOUT BROWSER REFRESH: the nav's castle icon
-  // resets both mini-games, then replays the full portcullis gate intro
-  // (closed gate + "Interact to Start" prompt) as if visiting fresh.
+  // castle icon = full reset, not just navigation: resets both games and
+  // replays the gate intro from scratch
   if (typeof resetQuizFn === "function") resetQuizFn();
   if (typeof resetFortFn === "function") resetFortFn();
 
@@ -115,15 +120,15 @@ homebtn.addEventListener("click", function () {
   const homeSection = document.getElementById("home");
   const prompt = document.getElementById("interact-prompt");
   if (overlay && homeSection && prompt) {
-    homeSection.classList.remove("visible"); // so it can fade in again, not just stay visible
+    homeSection.classList.remove("visible");
     overlay.classList.remove("lift");
     prompt.classList.remove("hide");
     prompt.disabled = false;
     overlay.style.pointerEvents = "auto";
     overlay.setAttribute("aria-hidden", "false");
-    introComplete = false; // gate is "closed" again — quick page-wipe shouldn't fire until it reopens
-    void overlay.offsetWidth; // force reflow so the class removals take effect before re-initializing
-    initPortcullisIntro(); // safe to re-call: prompt/overlay handlers use assignment, not addEventListener
+    introComplete = false;
+    void overlay.offsetWidth;
+    initPortcullisIntro(); // re-callable since handlers use onclick, not addEventListener
   }
 });
 navhomebtn.addEventListener("click", function () { show("home"); });
@@ -137,12 +142,9 @@ gamebtn.addEventListener("click", function () { show("game"); });
 // ============================================
 // CASTLE GATE INTRO
 // ============================================
-// Plays ONCE on first page load only (not every time Home is revisited,
-// since Home is no longer a separate page — it's just one of several
-// sections on this single page). Sequence:
-//   1. "Interact to Start" prompt shown on the closed gate.
-//   2. Click / Enter / Space plays: creak, then lift.
-//   3. Home content fades/rises in as the grille clears.
+// closed gate + "Interact to Start" -> click/Enter/Space -> creak, lift,
+// home fades in. Only plays fully on first load; nav just does a quick
+// wipe after that (see show() above).
 
 function initPortcullisIntro() {
   const overlay = document.getElementById("portcullis-overlay");
@@ -172,6 +174,7 @@ function initPortcullisIntro() {
     prompt.classList.add("hide");
     prompt.disabled = true;
 
+    startBackgroundMusic(); // first guaranteed user gesture on the whole site
     playSound(gateOpeningSound); // ~2.7s clip — lift below is timed to match it
 
     if (prefersReducedMotion()) {
@@ -211,9 +214,7 @@ function initPortcullisIntro() {
 // ============================================
 // JS-DRIVEN POSITION ANIMATION
 // ============================================
-// Unlike the portcullis (CSS transition) or the creak (CSS @keyframes),
-// this arrow's position is calculated and written every frame from JS
-// itself, using requestAnimationFrame + the element's CSS "left" offset.
+// moves the arrow icon every frame from JS (not a CSS transition/keyframe)
 
 function initHeroArrowDrift() {
   const arrow = document.getElementById("hero-arrow");
@@ -323,41 +324,11 @@ function playTone(frequencies, durationMs) {
 }
 
 function playCorrectSound() {
-  playTone([523.25, 783.99], 260); // C5 -> G5, a short "success" chime
+  playTone([523.25, 783.99], 260); // C5 -> G5 chime
 }
 
 function playIncorrectSound() {
-  playTone([160], 260); // low single buzz
-}
-
-// Unique sound for the Log Roll ability — a heavy, descending rumble built
-// from a few overlapping low oscillators with a pitch drop, distinct from
-// the short beeps used elsewhere for quiz/kill feedback.
-function playLogSound() {
-  if (prefersReducedMotion()) return;
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const startTime = ctx.currentTime;
-    const duration = 0.55;
-
-    [90, 60].forEach(function (startFreq, i) {
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      oscillator.type = "sawtooth";
-      oscillator.frequency.setValueAtTime(startFreq, startTime);
-      oscillator.frequency.exponentialRampToValueAtTime(startFreq * 0.5, startTime + duration);
-      gainNode.gain.setValueAtTime(0.001, startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.16 - i * 0.05, startTime + 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      oscillator.connect(gainNode).connect(ctx.destination);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + duration);
-    });
-  } catch (err) {
-    // unsupported/blocked — fail silently
-  }
+  playTone([160], 260); // low buzz
 }
 
 
@@ -373,24 +344,14 @@ function initGame() {
 
   if (!quizForm || !scorebox || !btnReset) return;
 
-  // Answer key — same pattern as the corrAnsArray approach: one correct
-  // value per question, checked against what FormData reads out of the form.
+  // answer key - checked against what FormData reads from the form
   const corrAnsArray = {
-    q1: "b", // stop siege towers/ladders from reaching the wall
-    q2: "b", // fire out, too narrow to fire back in accurately
-    q3: "b", // heavy iron-reinforced grille that seals the gate
-    q4: "b", // square corners were easier for sappers to undermine
-    q5: "b", // thick, sometimes sloped, curtain walls
-    q6: "b", // wood and earth
-    q7: "c", // the keep
-    q8: "a", // cannons could break tall stone walls apart in hours
+    q1: "b", q2: "b", q3: "b", q4: "b", q5: "b", q6: "b", q7: "c", q8: "a",
   };
 
   const questionIds = Object.keys(corrAnsArray);
 
-  // EVENT DELEGATION: one "change" listener on the whole form instead of one
-  // per radio button. Highlights whichever option the user just picked by
-  // walking up from event.target to find its <label>.
+  // event delegation: one change listener on the form instead of one per radio
   quizForm.addEventListener("change", function (event) {
     if (event.target.type !== "radio") return;
     const fieldset = event.target.closest(".quiz-question");
@@ -403,10 +364,9 @@ function initGame() {
   });
 
   quizForm.addEventListener("submit", function (event) {
-    event.preventDefault(); // stay on this single-page app, don't actually submit anywhere
+    event.preventDefault(); // single page app, don't actually submit
 
-    // FORM DATA: read every answer (and the player's name) out of the form
-    // in one go, rather than querying each radio input individually.
+    // FormData grabs the name + every answer at once
     const formData = new FormData(quizForm);
     const playerName = (formData.get("playerName") || "").toString().trim();
 
@@ -422,8 +382,7 @@ function initGame() {
       const isCorrect = givenAnswer === corrAnsArray[qid];
 
       if (isCorrect) score++;
-      // green if correct, red if wrong (including left unanswered)
-      fieldset.classList.add(isCorrect ? "correct" : "incorrect");
+      fieldset.classList.add(isCorrect ? "correct" : "incorrect"); // green/red feedback
     });
 
     const total = questionIds.length;
@@ -436,8 +395,7 @@ function initGame() {
       playIncorrectSound();
     }
 
-    // ABILITY TO RESET APP WITHOUT BROWSER REFRESH: reveal the retake
-    // button instead of making the person hit F5 to try again.
+    // swap to the retake button instead of needing a refresh
     btnSubmit.hidden = true;
     btnReset.hidden = false;
 
@@ -445,7 +403,7 @@ function initGame() {
   });
 
   function resetQuiz(scrollTo) {
-    quizForm.reset(); // clears every radio button and the name field
+    quizForm.reset();
     quizForm.querySelectorAll(".quiz-question").forEach(function (fieldset) {
       fieldset.classList.remove("correct", "incorrect");
     });
@@ -474,6 +432,7 @@ function initFortGame() {
   const gameSection = document.getElementById("fort-game");
   const arena = document.getElementById("game-arena");
   const fortIcon = arena ? arena.querySelector(".fort-icon") : null;
+  const playerIcon = document.getElementById("player-icon");
   const hpFill = document.getElementById("fort-hp-fill");
   const hpText = document.getElementById("fort-hp-text");
   const scoreEl = document.getElementById("fort-score");
@@ -497,16 +456,17 @@ function initFortGame() {
   const SPAWN_RADIUS_X = 46;
   const SPAWN_RADIUS_Y = 44;
   const BOSS_ANGLE_DEG = 90; // fixed "front gate" direction (straight down), only the boss always uses this
+  const BOW_ROTATION_OFFSET = 45; // calibrates the bow image's natural diagonal rest orientation to the computed aim angle
   const BLOCK_DAMAGE_REDUCTION = 0.6; // bracing cuts incoming damage by 60%
 
   // base stats before a wave's speed/damage multipliers (and the chosen
   // difficulty's own multipliers) are applied
   const BASE_STATS = {
-    soldier: { hp: 1, speed: 0.5, stopAtRadius: 9, attackEvery: 1400, damage: 8, sound: swordClashSound, spriteClass: "photo-icon icon-photo-soldier" },
+    soldier: { hp: 1, speed: 0.5, stopAtRadius: 9, attackEvery: 1400, damage: 8, sound: soldierCrySound, spriteClass: "photo-icon icon-photo-soldier" },
     archer: { hp: 1, speed: 0.42, stopAtRadius: 30, attackEvery: 1800, damage: 5, sound: arrowSound, spriteClass: "photo-icon icon-photo-archer", ranged: true },
-    lancer: { hp: 1, speed: 0.85, stopAtRadius: 9, attackEvery: 1600, damage: 14, sound: swordClashSound, spriteClass: "photo-icon icon-photo-lancer" },
-    heavy: { hp: 3, speed: 0.28, stopAtRadius: 9, attackEvery: 1900, damage: 12, sound: swordClashSound, spriteClass: "photo-icon icon-photo-heavy" },
-    boss: { hp: 4, speed: 0.2, stopAtRadius: 11, attackEvery: 2600, damage: 20, sound: ramSlamSound, spriteClass: "fort-sprite icon-boss" },
+    lancer: { hp: 1, speed: 0.85, stopAtRadius: 9, attackEvery: 1600, damage: 14, sound: lancerSound, spriteClass: "photo-icon icon-photo-lancer" },
+    heavy: { hp: 3, speed: 0.28, stopAtRadius: 9, attackEvery: 1900, damage: 12, sound: swordClashSound, spriteClass: "photo-icon icon-photo-heavy", loopSoundSrc: "Audio/Armor-Clanking.mp3" },
+    boss: { hp: 4, speed: 0.2, stopAtRadius: 11, attackEvery: 2600, damage: 20, sound: ramSlamSound, spriteClass: "photo-icon icon-photo-boss" },
   };
 
   // Each wave ramps difficulty up: more enemies, faster spawns, tougher
@@ -668,13 +628,23 @@ function initFortGame() {
       ranged: !!base.ranged,
       sound: base.sound,
       lastAttack: 0,
+      loopSound: null,
+      approaching: true,
     });
+
+    // heavy units get their own sound loop while walking (in case more
+    // than one heavy is on screen at once)
+    if (base.loopSoundSrc && !prefersReducedMotion()) {
+      const loopAudio = new Audio(base.loopSoundSrc);
+      loopAudio.loop = true;
+      loopAudio.volume = 0.6;
+      loopAudio.play().catch(function () {});
+      enemies[enemies.length - 1].loopSound = loopAudio;
+    }
   }
 
-  // angleDeg here follows screen convention: 0 = right, 90 = down (since the
-  // y axis increases downward), matching both Math.atan2(dy, dx) and CSS's
-  // own clockwise rotate() — so one computed angle drives both movement and
-  // the arrow image's visual rotation with no extra conversion needed.
+  // angle: 0 = right, 90 = down (y increases downward), matches both
+  // atan2 and CSS rotate() so movement and image rotation use one number
   function fireProjectile(fromX, fromY, toX, toY, enemyShot) {
     const dx = toX - fromX;
     const dy = toY - fromY;
@@ -701,6 +671,10 @@ function initFortGame() {
   }
 
   function killEnemy(enemy) {
+    if (enemy.loopSound) {
+      enemy.loopSound.pause();
+      enemy.loopSound.currentTime = 0;
+    }
     enemy.el.remove();
     enemies = enemies.filter(function (e) { return e.id !== enemy.id; });
     score++;
@@ -721,9 +695,7 @@ function initFortGame() {
     return nearest;
   }
 
-  // FREE AIM (desktop only): "(pointer: fine)" is true for mouse/trackpad
-  // devices and false on touch-primary devices, so this naturally only
-  // activates the aim-at-cursor behaviour on desktop, per the request.
+  // free aim, desktop only - "pointer: fine" means mouse/trackpad, false on touch
   const isDesktopPointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: fine)").matches;
   let mouseAimX = null;
   let mouseAimY = null;
@@ -733,6 +705,10 @@ function initFortGame() {
       const rect = arena.getBoundingClientRect();
       mouseAimX = ((event.clientX - rect.left) / rect.width) * 100;
       mouseAimY = ((event.clientY - rect.top) / rect.height) * 100;
+      if (playerIcon) {
+        const angleDeg = (Math.atan2(mouseAimY - CENTER, mouseAimX - CENTER) * 180) / Math.PI;
+        playerIcon.style.transform = "translate(-50%, -50%) rotate(" + (angleDeg + BOW_ROTATION_OFFSET) + "deg)";
+      }
     });
     arena.addEventListener("mouseleave", function () {
       mouseAimX = null;
@@ -740,10 +716,7 @@ function initFortGame() {
     });
   }
 
-  // Where an "untargeted" shot should go: on desktop, aim wherever the
-  // player's cursor currently is over the battlefield; otherwise (touch, or
-  // desktop before the mouse has moved over the arena yet) fall back to
-  // auto-targeting the nearest enemy, same as before.
+  // untargeted shots: aim at the cursor on desktop, else nearest enemy
   function getAimPoint() {
     if (isDesktopPointer && mouseAimX !== null && mouseAimY !== null) {
       return { x: mouseAimX, y: mouseAimY };
@@ -767,7 +740,15 @@ function initFortGame() {
         enemy.y += (dy / dist) * enemy.speed;
         enemy.el.style.left = enemy.x + "%"; // JS-DRIVEN CSS POSITION ANIMATION
         enemy.el.style.top = enemy.y + "%"; // JS-DRIVEN CSS POSITION ANIMATION
-      } else if (now - enemy.lastAttack >= enemy.attackEvery) {
+        return;
+      }
+
+      if (enemy.approaching) {
+        enemy.approaching = false;
+        if (enemy.loopSound) enemy.loopSound.pause(); // stop clanking once it's in position to attack
+      }
+
+      if (now - enemy.lastAttack >= enemy.attackEvery) {
         enemy.lastAttack = now;
         if (enemy.ranged) {
           playSound(arrowSound);
@@ -862,33 +843,45 @@ function initFortGame() {
     startCooldown(btnShoot, SHOOT_COOLDOWN_MS, function (v) { shootReady = v; }, "Shoot Arrow");
   }
 
+  // rotates an aim point around the fort's centre by a small angle, so the
+  // volley's 3 arrows fan out slightly instead of all converging on one spot
+  function computeSpreadTarget(baseX, baseY, spreadDeg) {
+    const dx = baseX - CENTER;
+    const dy = baseY - CENTER;
+    const dist = Math.hypot(dx, dy) || 1;
+    const baseAngle = Math.atan2(dy, dx);
+    const newAngle = baseAngle + (spreadDeg * Math.PI) / 180;
+    return {
+      x: CENTER + Math.cos(newAngle) * dist,
+      y: CENTER + Math.sin(newAngle) * dist,
+    };
+  }
+
+  function fireSpreadBurst() {
+    const aim = getAimPoint();
+    if (!aim) return;
+    [-9, 0, 9].forEach(function (spreadDeg) {
+      const t = computeSpreadTarget(aim.x, aim.y, spreadDeg);
+      playSound(arrowSound);
+      fireProjectile(CENTER, CENTER, t.x, t.y, false);
+    });
+  }
+
   function playerVolley() {
     if (!running || !volleyReady || isBlocking) return;
-    let shotsLeft = 3;
-    const volleyTimer = setInterval(function () {
-      if (!running || shotsLeft <= 0) {
-        clearInterval(volleyTimer);
-        return;
-      }
-      if (isBlocking) { shotsLeft--; return; } // skip this shot if bracing kicked in mid-volley
-      const target = getAimPoint();
-      if (target) {
-        playSound(arrowSound);
-        fireProjectile(CENTER, CENTER, target.x, target.y, false);
-      }
-      shotsLeft--;
-    }, 150);
+    fireSpreadBurst(); // first burst of 3, slightly fanned out
+    setTimeout(function () {
+      if (running && !isBlocking) fireSpreadBurst(); // second burst
+    }, 450);
     startCooldown(btnVolley, VOLLEY_COOLDOWN_MS, function (v) { volleyReady = v; }, "Arrow Volley (3x)");
   }
 
-  // Clash Royale "The Log"-style ability: rolls a log outward toward the
-  // nearest enemy's direction. Unlike a normal arrow it doesn't stop at the
-  // first thing it hits — it keeps travelling, damaging AND knocking back
-  // every enemy along its path (each only once per roll).
+  // Clash Royale "The Log" style: rolls toward the nearest enemy and hits
+  // everything along the way instead of stopping at the first target
   function fireLog() {
     if (!running || !logReady || isBlocking) return;
     const target = findNearestEnemy();
-    const targetX = target ? target.x : CENTER + SPAWN_RADIUS_X; // default: roll toward the "front" if nothing's out there yet
+    const targetX = target ? target.x : CENTER + SPAWN_RADIUS_X; // default direction if nothing's out there
     const targetY = target ? target.y : CENTER;
 
     const dx = targetX - CENTER;
@@ -906,7 +899,7 @@ function initFortGame() {
     el.appendChild(spinner);
     arena.appendChild(el);
 
-    playLogSound();
+    playSound(logRollSound);
     projectiles.push({
       el: el,
       x: CENTER,
@@ -979,8 +972,7 @@ function initFortGame() {
     startWave(1);
   }
 
-  // FORM DATA: read the player's name for the fort game the same way the
-  // quiz does, via the FormData API rather than reading input.value directly.
+  // FormData grabs the name + difficulty in one go, same as the quiz
   startForm.addEventListener("submit", function (event) {
     event.preventDefault();
     const formData = new FormData(startForm);
@@ -996,9 +988,7 @@ function initFortGame() {
   btnVolley.addEventListener("click", playerVolley);
   btnLog.addEventListener("click", fireLog);
 
-  // Brace/block — hold to reduce incoming damage, can't attack while active.
-  // Works via mouse, touch, AND a held keyboard key, so it's usable on both
-  // desktop and mobile.
+  // brace/block: hold to reduce damage, works on mouse, touch, and keyboard
   btnBrace.addEventListener("mousedown", function () { setBlocking(true); });
   btnBrace.addEventListener("touchstart", function (e) { e.preventDefault(); setBlocking(true); }, { passive: false });
   ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach(function (evt) {
@@ -1017,7 +1007,7 @@ function initFortGame() {
       playerShoot(null);
     } else if (event.key === "v" || event.key === "V") {
       playerVolley();
-    } else if (event.key === "l" || event.key === "L") {
+    } else if (event.key === "c" || event.key === "C") {
       fireLog();
     }
   });
@@ -1026,11 +1016,8 @@ function initFortGame() {
     if (event.key === "Shift") setBlocking(false);
   });
 
-  // EVENT DELEGATION: one click listener on the whole arena instead of one
-  // per enemy. Tapping directly on an enemy targets it specifically; tapping
-  // empty battlefield fires at whichever enemy is currently nearest the fort.
-  // Works for both mouse and touch, which also covers "Mini Game working
-  // for mobile".
+  // event delegation: one listener on the arena, not one per enemy.
+  // tapping an enemy targets it, tapping empty space aims at nearest
   arena.addEventListener("click", function (event) {
     const enemyEl = event.target.closest(".enemy");
     if (enemyEl) {
@@ -1041,12 +1028,9 @@ function initFortGame() {
     }
   });
 
-  // ABILITY TO RESET APP WITHOUT BROWSER REFRESH
-  btnRestart.addEventListener("click", startGame);
+  btnRestart.addEventListener("click", startGame); // reset without refresh
 
-  // Full reset triggered by the castle icon: stop any active run entirely
-  // and go back to the name-entry start screen, rather than just starting
-  // a fresh run in place (which is all "Play Again" needs to do).
+  // castle icon reset: stop the run entirely and go back to the start screen
   resetFortFn = function () {
     clearInterval(tickInterval);
     clearInterval(spawnInterval);
@@ -1059,13 +1043,74 @@ function initFortGame() {
   };
 }
 
+// ============================================
+// FULLSCREEN TOGGLE (cross-browser)
+// ============================================
 
+function enterFullscreen() {
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen();
+  } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+    document.documentElement.mozRequestFullScreen();
+  } else if (document.documentElement.webkitRequestFullscreen) { // Chrome/Safari/Opera
+    document.documentElement.webkitRequestFullscreen();
+  } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
+    document.documentElement.msRequestFullscreen();
+  }
+}
 
+function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+  }
+}
+
+function initFullscreenToggle() {
+  const btnFullscreen = document.getElementById("btnFullscreen");
+  if (!btnFullscreen) return;
+
+  btnFullscreen.addEventListener("click", function () {
+    const isFullscreen =
+      document.fullscreenElement ||
+      document.mozFullScreenElement ||
+      document.webkitFullscreenElement ||
+      document.msFullscreenElement;
+
+    if (!isFullscreen) {
+      enterFullscreen();
+    } else {
+      exitFullscreen();
+    }
+  });
+}
+
+function initMusicMuteToggle() {
+  const btnMute = document.getElementById("btnMuteMusic");
+  if (!btnMute) return;
+
+  btnMute.addEventListener("click", function () {
+    backgroundMusic.muted = !backgroundMusic.muted;
+    btnMute.querySelector("span").textContent = backgroundMusic.muted ? "🔇" : "🔊";
+    btnMute.title = backgroundMusic.muted ? "Unmute background music" : "Mute background music";
+  });
+}
+
+// ============================================
+// RUN EVERYTHING
+// ============================================
 
 setMenuState(false);
-show("home"); // show home page by default, now that hamBtn/menuItemsList both exist
+show("home");
 initPortcullisIntro();
 initHeroArrowDrift();
 initBackToTop();
 initGame();
 initFortGame();
+initFullscreenToggle();
+initMusicMuteToggle();

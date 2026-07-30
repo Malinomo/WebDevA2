@@ -2,10 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="An interactive guide to medieval castles — anatomy, defenses, design evolution, and a siege defense mini-game." />
   <title>Castles | Medieval Castle Guide</title>
   <link rel="icon" href="Images/Castle_Icon.png" />
+
+  <!-- lets the site run fullscreen if added to a phone's home screen -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Castles" />
+  <link rel="apple-touch-icon" href="Images/Castle_Icon.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -15,8 +24,7 @@
 <body>
   <a class="skip-link" href="#pagecontainer">Skip to main content</a>
 
-  <!-- Castle gate intro: shows a closed-gate "Interact to Start" prompt on first load only;
-       clicking/pressing Enter or Space plays the portcullis lift, then reveals Home -->
+  <!-- portcullis gate intro, click/Enter/Space to start -->
   <div id="portcullis-overlay" role="dialog" aria-modal="true" aria-labelledby="interact-title">
     <div class="crossbar" style="top: 20%;"></div>
     <div class="crossbar" style="top: 46%;"></div>
@@ -71,7 +79,7 @@
         <div class="home-primer">
           <span class="feature-eyebrow">What is a castle?</span>
           <p>
-            A castle was a fortified private residence — built as much to project a lord's power
+            A castle was a fortified private residence. It was built as much to project a lord's power
             over the surrounding land as to physically defend it. Most of the castles pictured
             today were built across Europe between the 11th and 15th centuries, and their design
             never stayed still for long: every generation adapted to whatever siege technology
@@ -90,7 +98,7 @@
           <p class="page-kicker">Know the structure</p>
           <h1>Castle Anatomy</h1>
           <p>
-            A castle wasn't just a big building — every structural feature had a specific defensive or
+            A castle wasn't just a big building. Every structural feature had a specific defensive or
             practical job. Below are the key parts that made up a typical medieval castle, and why each
             one was necessary.
           </p>
@@ -176,8 +184,8 @@
               entrance if attackers tried to rush the gate.
             </p>
             <p>
-              Larger castles often used twin-towered gatehouses with two portcullises — one at the
-              front, one at the back — trapping any attackers who forced their way past the first in
+              Larger castles often used twin-towered gatehouses with two portcullises, one at the
+              front and one at the back trapping any attackers who forced their way past the first in
               a narrow passage between them. Caerphilly Castle in Wales is a well-known example of this
               layered gatehouse design.
             </p>
@@ -197,8 +205,8 @@
               narrow for attackers to fire back in accurately. This let defenders attack safely from cover.
             </p>
             <p>
-              Later designs added a horizontal slit crossing the vertical one, forming a cross shape —
-              this let archers angle their shots left and right as well as up and down, covering a much
+              Later designs added a horizontal slit crossing the vertical one, forming a cross shape. 
+              This let archers angle their shots left and right as well as up and down, covering a much
               wider field of fire from the same fixed position.
             </p>
           </div>
@@ -214,7 +222,7 @@
             <h2>Towers</h2>
             <p>
               Towers built at intervals along the curtain wall let defenders see and fire along the
-              length of the wall itself, not just straight ahead — an attacker trying to climb the wall
+              length of the wall itself, not just straight ahead, an attacker trying to climb the wall
               between two towers could be fired on from both sides at once. This is called flanking fire,
               and it's one of the main reasons medieval castles favoured round towers over flat, straight walls.
             </p>
@@ -234,7 +242,7 @@
             <span class="feature-eyebrow">Defense</span>
             <h2>Battlements (Crenellations)</h2>
             <p>
-              The zig-zag pattern along the top of a wall — alternating raised sections (merlons) and
+              The zig-zag pattern along the top of a wall alternating raised sections (merlons) and
               gaps (crenels). Defenders could stand behind the raised sections for cover, then step into
               the gaps to fire down at attackers below.
             </p>
@@ -278,7 +286,7 @@
           <p>
             Every defensive feature on a castle existed because of a specific attack it needed to
             survive. Rather than looking at the parts on their own, this page looks at the actual
-            siege tactics attackers used — and how castle defenses were designed directly in
+            siege tactics attackers used and how castle defenses were designed directly in
             response to each one.
           </p>
         </header>
@@ -294,7 +302,7 @@
             <p>
               A battering ram was simply a heavy log, swung again and again at a gate or wall
               until it gave way. Castles countered this threat with thick curtain walls and
-              reinforced gatehouses — stone and timber built dense enough that repeated blows
+              reinforced gatehouses using stone and timber built dense enough that repeated blows
               couldn't crack them before the attacking force ran out of time, supplies, or nerve.
             </p>
             <p>
@@ -313,7 +321,7 @@
             <span class="feature-eyebrow">Escalade</span>
             <h2>Ladder Scaling</h2>
             <p>
-              Escalade — climbing straight over the wall with ladders — was often the fastest way
+              Climbing straight over the wall with ladders was often the fastest way
               to attack, but also the costliest. Moats kept ladder crews from ever reaching the
               base of the wall in the first place, while tall curtain walls meant a ladder had to
               be built long, awkward, and slow to raise under fire.
@@ -335,7 +343,7 @@
             <h2>Mining &amp; Sapping</h2>
             <p>
               Not every attack came from above ground. Sappers would dig tunnels beneath a wall,
-              propping the tunnel up with wooden supports, then set the props alight — once they
+              propping the tunnel up with wooden supports, then set the props alight and once they
               burned through, the section of wall above collapsed. Square towers were especially
               vulnerable at their corners, which is a big part of why later castles shifted to
               round towers that were far harder to undermine cleanly.
@@ -357,13 +365,13 @@
             <span class="feature-eyebrow">Siege &amp; Blockade</span>
             <h2>Starvation Sieges</h2>
             <p>
-              Attackers didn't always need to breach a single wall — surrounding a castle and
+              Attackers didn't always need to breach a single wall, by surrounding a castle and
               waiting could be just as effective. Defenders countered this by building for
               self-sufficiency: a well inside the courtyard or keep meant a water supply that
               couldn't be cut off, and large storerooms let a garrison hold out for months.
             </p>
             <p>
-              Some sieges lasted well over a year for exactly this reason — the castle wasn't
+              Some sieges lasted well over a year for exactly this reason so when the castle wasn't
               beaten by force, it simply had to be starved out slower than the besieging army
               could afford to wait.
             </p>
@@ -382,7 +390,7 @@
               Rather than sending soldiers to reach the walls, some attacks smashed them from a
               distance instead. Trebuchets used a massive counterweight to hurl boulders weighing
               hundreds of pounds at curtain walls and gatehouses from well beyond arrow range.
-              Round towers were partly a response to exactly this threat — a curved surface
+              Round towers were partly a response to exactly this threat, with a curved surface it
               deflects and scatters the force of a strike, where a flat wall takes it head-on.
             </p>
             <p>
@@ -402,7 +410,7 @@
             <span class="feature-eyebrow">Breach</span>
             <h2>Rushing the Gate</h2>
             <p>
-              If soldiers ever broke through the outer gate, the fight wasn't over — it just moved
+              If soldiers ever broke through the outer gate, the fight wasn't over, it just moved
               into a deliberately narrow, exposed passage. Murder holes, cut into the ceiling
               directly above this passage, let defenders fire arrows or drop stones and boiling
               substances onto attackers trapped below with nowhere to take cover.
@@ -446,7 +454,7 @@
           <p class="page-kicker">Five centuries of adaptation</p>
           <h1>How Castle Design Changed Over Time</h1>
           <p>
-            Castle design didn't stay still for 500 years — it was in a constant arms race with
+            Castle designs didn't stay still for 500 years, it was in a constant arms race with
             whatever siege technology existed at the time. Every major shift in castle architecture
             below happened because the previous generation of defenses had become beatable.
           </p>
@@ -463,12 +471,12 @@
             <p>
               The earliest castles weren't stone at all. A motte-and-bailey was a wooden tower on
               top of a raised earth mound (the motte), with an enclosed courtyard (the bailey)
-              beside it, all surrounded by a ditch and wooden palisade. They were fast to build —
-              often in just a few weeks — which mattered enormously to the Normans, who needed to
+              beside it, all surrounded by a ditch and wooden palisade. They were fast to build and could be erected
+               in just a few weeks which mattered enormously to the Normans, who needed to
               secure conquered territory in England quickly after 1066.
             </p>
             <p>
-              The trade-off was durability. Wood rots, and it burns — and burning down the tower
+              The trade-off was durability. Wood rots, and it burns and burning down the tower
               was often the simplest way to end a siege.
             </p>
           </div>
@@ -486,12 +494,12 @@
               Once territory was secured, wood was rebuilt in stone. A stone keep couldn't be
               burned or hacked through, and its sheer scale (Colchester's keep is still the
               largest Norman keep in Europe) was as much a political statement as a defensive
-              one — a visible sign that the new rulers were there to stay.
+              one and a visible sign that the new rulers were there to stay.
             </p>
             <p>
               The downside was cost and time. A stone keep could take a decade or more to build,
-              and its square corners were a structural weak point that later siege tactics — like
-              mining — learned to exploit.
+              and its square corners were a structural weak point that later siege tactics like
+              mining learned to exploit it.
             </p>
           </div>
         </article>
@@ -506,12 +514,12 @@
             <h2>The Concentric Castle</h2>
             <p>
               By the 13th century, castle design had shifted away from a single dominant tower
-              toward rings within rings — an outer wall lower than the inner one, so defenders on
+              toward rings within rings, an outer wall lower than the inner one, so defenders on
               the inner wall could fire clean over the outer wall at the same time. Beaumaris
               Castle in Wales is considered the most complete example ever built.
             </p>
             <p>
-              This design removed the single-point weakness of the old keep entirely — there was
+              This design removed the single-point weakness of the old keep entirely, since there was
               no one tower to bring down that ended the siege. Attackers had to break through an
               entire ring, then do it again.
             </p>
@@ -529,13 +537,13 @@
             <p>
               Gunpowder cannon changed everything. Tall, flat stone walls that had stopped
               battering rams for centuries could be smashed apart by cannon fire in hours.
-              Fortifications responded by getting low, thick, and angled — star-shaped
+              Fortifications responded by getting low, thick, and angled. The star-shaped
               bastion forts like Fort Bourtange replaced height with sloped earthwork walls that
               deflected cannonballs instead of absorbing them head-on.
             </p>
             <p>
               This is really the end of the castle as a military structure. Star forts were built
-              for cannon warfare, not knights and archers — the tall, romantic stone castle had
+              for cannon warfare, not knights and archers and the tall, romantic stone castle had
               simply been made obsolete by the same kind of arms race that built it in the first
               place.
             </p>
@@ -661,8 +669,8 @@
         </div>
 
         <div id="game-arena" role="group" aria-label="Battlefield — tap an enemy to shoot it, or use the buttons below">
-          <img class="fort-icon" src="Images/Fort.png" alt="" aria-hidden="true" />
-          <img id="player-icon" src="Images/Bow.png" alt="" aria-hidden="true" />
+          <img class="fort-icon" src="Images/Fort.png" alt="" aria-hidden="true" draggable="false" />
+          <img id="player-icon" src="Images/Bow.png" alt="" aria-hidden="true" draggable="false" />
         </div>
 
         <div class="fort-controls">
@@ -672,7 +680,7 @@
           <button id="btnBrace" type="button">Brace (hold)</button>
         </div>
 
-        <p class="fort-controls-hint">Keyboard: <kbd>Space</kbd> to shoot, <kbd>V</kbd> for volley, <kbd>L</kbd> for log roll, hold <kbd>Shift</kbd> to brace.</p>
+        <p class="fort-controls-hint">Keyboard: <kbd>Space</kbd> to shoot, <kbd>V</kbd> for volley, <kbd>C</kbd> for log roll, hold <kbd>Shift</kbd> to brace.</p>
 
         <p id="fort-message" role="status" aria-live="polite"></p>
         <button id="btnFortRestart" type="button" hidden>Play Again</button>
@@ -702,5 +710,21 @@
       </div>
     </details>
   </footer>
+
+  <!-- Global overlay controls, shown on every page -->
+  <div id="globalControlsLeft">
+    <button id="btnFullscreen" type="button" title="Toggle Fullscreen">
+      <span aria-hidden="true">⛶</span> Toggle Fullscreen
+    </button>
+
+    <button id="btnMuteMusic" type="button" title="Mute background music">
+      <span aria-hidden="true">🔊</span>
+    </button>
+  </div>
+
+  <div id="qrMobileCard" aria-hidden="true">
+    <p>View on<br />Mobile</p>
+    <img src="Images/qr.png" alt="" />
+  </div>
 </body>
 </html>

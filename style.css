@@ -117,10 +117,7 @@ summary:focus-visible,
     opacity 0.5s ease 2.2s;
 }
 
-/* Quick reused wipe for page-to-page navigation (fast, no audio) — a
-   self-contained @keyframes animation rather than a transition, so it can
-   run temporarily on top of .lift's resting hidden state (opacity:0,
-   translateY(-110%)) without needing to touch or reset that class at all. */
+/* quick wipe animation for switching pages, separate from the gate lift above */
 #portcullis-overlay.quick-wipe {
   animation: quick-wipe 0.45s ease-in-out;
 }
@@ -473,8 +470,7 @@ nav li button[aria-current="page"] {
   transform: translateY(-2px);
 }
 
-/* JS animates this element's left offset directly (see main.js) — needs
-   position:relative for that "left" property to have any visual effect */
+/* main.js animates this element's left offset every frame */
 #hero-arrow {
   display: inline-block;
   position: relative;
@@ -692,10 +688,7 @@ nav li button[aria-current="page"] {
   background: rgba(130, 60, 60, 0.22);
 }
 
-/* CSS SPRITE (quiz version): defense-icons-sprite.png, 5 icons x 48px each.
-   Kept alongside the fort game's own separate sprite below — two different
-   sprite sheets for two different parts of the page, each still a single
-   combined image rather than one file per icon. */
+/* CSS sprite for the quiz icons: one image, 5 icons, shifted with background-position */
 .defense-icon {
   display: inline-block;
   width: 20px;
@@ -809,32 +802,7 @@ nav li button[aria-current="page"] {
   outline-offset: 2px;
 }
 
-/* CSS SPRITE: one combined image (Enemy-Icons.png, 3 icons x ~63px each =
-   188x64 total) instead of 3 separate icon files. Each icon class just
-   shifts background-position left by one slice. */
-.fort-sprite {
-  display: inline-block;
-  width: 54px;
-  height: 54px;
-  background-image: url("Images/Enemy-Icons.png");
-  background-size: 162px 54px;
-  flex-shrink: 0;
-}
-
-.icon-boss {
-  width: 68px;
-  height: 68px;
-  background-size: 204px 68px; /* boss icon shown bigger, so its own scale must match */
-  background-position: -136px 0;
-}
-
-/* second small sprite sheet (generated-enemy-icons-2.png, 2 icons x 64px
-   each = 128x64) — only "heavy" still uses it, since soldier/archer/lancer
-   now use real photos instead (see .photo-icon rules below) */
-
-/* Real photos for these three unit types, framed as circular "unit
-   portraits" (border + object-fit: cover) since — unlike the generated
-   line-art icons — these are full photographs, not cut-out silhouettes. */
+/* enemy photos - contain not cover, so transparent cutouts don't get cropped */
 .photo-icon {
   display: inline-block;
   width: 74px;
@@ -860,6 +828,12 @@ nav li button[aria-current="page"] {
 
 .icon-photo-heavy {
   background-image: url("Images/enemy-heavy.png");
+}
+
+.icon-photo-boss {
+  width: 90px;
+  height: 110px;
+  background-image: url("Images/enemy-battering-ram.png");
 }
 
 #fort-game {
@@ -911,10 +885,16 @@ nav li button[aria-current="page"] {
   position: relative;
   height: clamp(420px, 75vh, 720px);
   margin-bottom: 1rem;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 0.7rem;
-  background-color: #1f5c34; /* solid green, like a grass battlefield */
+  background-color: #1f5c34; /* fallback if the texture fails to load */
+  background-image: url("Images/arena-texture.png");
+  background-repeat: repeat;
+  background-size: 128px 128px;
   cursor: crosshair;
 }
 
@@ -926,6 +906,8 @@ nav li button[aria-current="page"] {
   width: 84px;
   height: 84px;
   object-fit: contain;
+  -webkit-user-drag: none;
+  user-drag: none;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
   z-index: 3;
 }
@@ -936,15 +918,15 @@ nav li button[aria-current="page"] {
   top: 50%;
   width: 92px;
   height: auto;
-  transform: translate(-50%, -50%) rotate(72deg); /* centered on the fort, stands upright ("lengthier up and down") */
+  transform: translate(-50%, -50%) rotate(72deg); /* default rest angle; JS overrides this to follow the mouse on desktop */
   transform-origin: center;
+  -webkit-user-drag: none;
+  user-drag: none;
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6));
   z-index: 4; /* explicitly above .fort-icon (z-index: 3) so it's never hidden behind it */
 }
 
-/* dynamically created enemy units — JS sets "left" every tick, this is the
-   JS-driven position animation (distinct from CSS transitions/keyframes
-   used elsewhere on the site) */
+/* enemies - main.js sets left/top every tick, that's the JS position animation */
 .enemy {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -968,7 +950,7 @@ nav li button[aria-current="page"] {
   transition: width 0.15s ease;
 }
 
-/* projectiles — arrows fired by the player or by enemy archers */
+/* arrows - player and enemy shots both use this */
 .projectile {
   position: absolute;
   width: 44px;
@@ -977,14 +959,10 @@ nav li button[aria-current="page"] {
   background-size: contain;
   background-repeat: no-repeat;
   z-index: 4;
-  /* Arrow.png points left by default. JS sets the full transform (translate
-     + rotate) per projectile based on its actual travel angle, since arrows
-     can now fly in any direction, not just left/right. */
+  /* JS sets the actual rotation per shot based on its travel angle */
 }
 
-/* the log roll — bigger, and keeps spinning continuously as it travels,
-   layered on top of the JS-set translate/rotate-to-heading transform via
-   a wrapping animation rather than replacing it */
+/* log roll ability - bigger, keeps spinning while it travels */
 .projectile.log-roll {
   width: 64px;
   height: 32px;
@@ -1187,8 +1165,7 @@ footer {
 }
 
 /* ===== RESPONSIVE MENU AND LAYOUT =====
-   Single breakpoint at 800px splits the site into exactly two layouts:
-   desktop (above) and mobile (below), as required. */
+   single 800px breakpoint - desktop above, mobile below */
 
 @media screen and (max-width: 800px) {
   #game-arena {
@@ -1328,5 +1305,96 @@ footer {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== FULLSCREEN TOGGLE + "VIEW ON MOBILE" QR CARD ===== */
+/* fixed to the corners on every page */
+
+#globalControlsLeft {
+  position: fixed;
+  left: max(1.1rem, env(safe-area-inset-left));
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+#btnFullscreen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(255, 226, 153, 0.55);
+  border-radius: 999px;
+  background: rgba(20, 17, 12, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--parchment);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#btnFullscreen:hover {
+  background: rgba(138, 114, 72, 0.55);
+}
+
+#btnMuteMusic {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid rgba(255, 226, 153, 0.55);
+  border-radius: 50%;
+  background: rgba(20, 17, 12, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--parchment);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#btnMuteMusic:hover {
+  background: rgba(138, 114, 72, 0.55);
+}
+
+#qrMobileCard {
+  position: fixed;
+  right: max(1.1rem, env(safe-area-inset-right));
+  bottom: max(6.4rem, env(safe-area-inset-bottom)); /* sits above the back-to-top button, not on top of it */
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(255, 226, 153, 0.55);
+  border-radius: 1rem;
+  background: rgba(20, 17, 12, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#qrMobileCard p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: var(--parchment);
+  text-align: right;
+}
+
+#qrMobileCard img {
+  width: 56px;
+  height: 56px;
+  border-radius: 0.4rem;
+  background: #fff;
+  padding: 3px;
+}
+
+/* both are desktop-only features, so hide them on mobile too */
+@media screen and (max-width: 800px) {
+  #btnFullscreen,
+  #qrMobileCard {
+    display: none;
   }
 }
