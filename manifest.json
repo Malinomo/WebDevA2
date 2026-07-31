@@ -1,8 +1,7 @@
 {
   "name": "Castles | Medieval Castle Guide",
   "short_name": "Castles",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "index.html",
   "display": "fullscreen",
   "background_color": "#171d26",
   "theme_color": "#171d26",

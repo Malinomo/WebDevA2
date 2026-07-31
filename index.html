@@ -3,22 +3,17 @@
 <head>
   <meta charset="UTF-8" />
 
-  <!-- mobile web app setup: locks zoom + tells the browser to launch full screen -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <!-- mobile web app setup, same as the slide: locks zoom + launches full screen -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Castles" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+  <!-- manifest.json makes this installable (PWA) -->
+  <link rel="manifest" href="manifest.json" />
 
   <meta name="description" content="An interactive guide to medieval castles — anatomy, defenses, design evolution, and a siege defense mini-game." />
   <title>Castles | Medieval Castle Guide</title>
-
-  <!-- icons: favicon.ico for the browser tab, Castle_Icon.png for home screen -->
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  <link rel="apple-touch-icon" href="Images/Castle_Icon.png" />
-
-  <!-- manifest.json makes this installable as a PWA (Progressive Web App) -->
-  <link rel="manifest" href="manifest.json" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -68,6 +63,7 @@
       <li><button id="defensesbtn" type="button">Why Castle Defenses Were Built</button></li>
       <li><button id="evolutionbtn" type="button">How Castle Design Changed Over Time</button></li>
       <li><button id="gamebtn" type="button">Siege Defense Game</button></li>
+      <li><button id="btnAddHome" type="button" hidden>📲 Add to Home Screen</button></li>
     </ul>
   </nav>
 

@@ -1044,6 +1044,41 @@ function initFortGame() {
 }
 
 // ============================================
+// ADD TO HOME SCREEN (PWA install)
+// ============================================
+// the browser fires "beforeinstallprompt" when the site is installable
+// (Chrome/Android/desktop). iOS Safari never fires this — there's no
+// programmatic install there, so the button just stays hidden on iOS.
+
+let deferredInstallPrompt = null;
+
+function initAddToHomeScreen() {
+  const btnAddHome = document.getElementById("btnAddHome");
+  if (!btnAddHome) return;
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault(); // stop the browser's default mini-infobar
+    deferredInstallPrompt = event;
+    btnAddHome.hidden = false; // only show the option once we know it'll work
+  });
+
+  btnAddHome.addEventListener("click", function () {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt(); // shows the real browser install popup
+    deferredInstallPrompt.userChoice.then(function () {
+      deferredInstallPrompt = null;
+      btnAddHome.hidden = true; // already installed, or user said no either way
+    });
+  });
+
+  // hide it once installed, in case it was still showing
+  window.addEventListener("appinstalled", function () {
+    btnAddHome.hidden = true;
+  });
+}
+
+
+// ============================================
 // FULLSCREEN TOGGLE (cross-browser)
 // ============================================
 
@@ -1114,3 +1149,4 @@ initGame();
 initFortGame();
 initFullscreenToggle();
 initMusicMuteToggle();
+initAddToHomeScreen();
