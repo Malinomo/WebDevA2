@@ -175,7 +175,7 @@ function initPortcullisIntro() {
     prompt.disabled = true;
 
     startBackgroundMusic(); // first guaranteed user gesture on the whole site
-    playSound(gateOpeningSound); // ~2.7s clip — lift below is timed to match it
+    playSound(gateOpeningSound); // ~2.7s clip, lift below is timed to match it
 
     if (prefersReducedMotion()) {
       overlay.classList.add("lift");
@@ -294,7 +294,7 @@ function initBackToTop() {
 // ============================================
 // AUDIO FEEDBACK
 // ============================================
-// Short tones generated with the Web Audio API — no external sound file
+// short tones generated with the Web Audio API, no external sound file
 // needed. A rising two-note chime for correct answers, a low buzz for wrong.
 
 function playTone(frequencies, durationMs) {
@@ -319,7 +319,7 @@ function playTone(frequencies, durationMs) {
       oscillator.stop(startTime + noteDuration);
     });
   } catch (err) {
-    // Web Audio unsupported or blocked — fail silently, audio is a nice-to-have
+    // Web Audio unsupported or blocked, fail silently, audio is a nice-to-have
   }
 }
 
@@ -424,7 +424,7 @@ function initGame() {
 
 
 // ============================================
-// PROTECT THE FORT — real-time defense mini-game
+// PROTECT THE FORT (real-time defense mini-game)
 // ============================================
 
 function initFortGame() {
@@ -446,7 +446,7 @@ function initFortGame() {
   if (!startForm || !gameSection || !arena) return;
 
   const MAX_HP = 100;
-  const CENTER = 50; // fort/player sit at (50%, 50%) — the middle of the arena
+  const CENTER = 50; // fort/player sit at (50%, 50%), the middle of the arena
   const SHOOT_COOLDOWN_MS = 600;
   const VOLLEY_COOLDOWN_MS = 6000;
   const LOG_COOLDOWN_MS = 9500;
@@ -530,7 +530,7 @@ function initFortGame() {
     hpFill.style.width = pct + "%"; // UPDATE CSS PROPERTIES USING JS
     hpFill.style.backgroundColor = pct < 30 ? "#c9605f" : "";
     hpText.textContent = fortHp + " / " + MAX_HP; // UPDATE CONTENT USING JS
-    scoreEl.textContent = "Score: " + score + " — Wave " + (waveNumber || 1) + " / " + WAVES.length;
+    scoreEl.textContent = "Score: " + score + ", Wave " + (waveNumber || 1) + " / " + WAVES.length;
   }
 
   function flashFort() {
@@ -728,7 +728,7 @@ function initFortGame() {
   function tick() {
     if (!running) return;
 
-    // move + act on each enemy — full 2D movement toward the fort at centre
+    // move + act on each enemy, full 2D movement toward the fort at centre
     enemies.forEach(function (enemy) {
       const now = Date.now();
       const dx = CENTER - enemy.x;
@@ -776,7 +776,7 @@ function initFortGame() {
           p.dead = true;
         }
       } else if (p.isLog) {
-        // rolls THROUGH enemies rather than stopping at the first one —
+        // rolls THROUGH enemies rather than stopping at the first one,
         // damages and knocks back every enemy it passes, once each
         enemies.forEach(function (enemy) {
           if (p.hitIds.has(enemy.id)) return;
@@ -1043,40 +1043,6 @@ function initFortGame() {
   };
 }
 
-// ============================================
-// ADD TO HOME SCREEN (PWA install)
-// ============================================
-// the browser fires "beforeinstallprompt" when the site is installable
-// (Chrome/Android/desktop). iOS Safari never fires this — there's no
-// programmatic install there, so the button just stays hidden on iOS.
-
-let deferredInstallPrompt = null;
-
-function initAddToHomeScreen() {
-  const btnAddHome = document.getElementById("btnAddHome");
-  if (!btnAddHome) return;
-
-  window.addEventListener("beforeinstallprompt", function (event) {
-    event.preventDefault(); // stop the browser's default mini-infobar
-    deferredInstallPrompt = event;
-    btnAddHome.hidden = false; // only show the option once we know it'll work
-  });
-
-  btnAddHome.addEventListener("click", function () {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt(); // shows the real browser install popup
-    deferredInstallPrompt.userChoice.then(function () {
-      deferredInstallPrompt = null;
-      btnAddHome.hidden = true; // already installed, or user said no either way
-    });
-  });
-
-  // hide it once installed, in case it was still showing
-  window.addEventListener("appinstalled", function () {
-    btnAddHome.hidden = true;
-  });
-}
-
 
 // ============================================
 // FULLSCREEN TOGGLE (cross-browser)
@@ -1149,4 +1115,3 @@ initGame();
 initFortGame();
 initFullscreenToggle();
 initMusicMuteToggle();
-initAddToHomeScreen();

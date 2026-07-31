@@ -269,11 +269,6 @@ nav li button:hover {
   background: rgba(138, 114, 72, 0.44);
 }
 
-/* "Add to Home Screen" only makes sense on mobile, hide it on desktop */
-#btnAddHome {
-  display: none;
-}
-
 nav li button[aria-current="page"] {
   background: var(--gold-muted);
   color: #18130d;
@@ -1231,12 +1226,6 @@ footer {
     border-radius: 0.65rem;
     font-size: 0.9rem;
     white-space: normal;
-  }
-
-  /* on mobile it can show, but only once JS clears the "hidden" attribute
-     (meaning the browser actually offered to install the app) */
-  #btnAddHome:not([hidden]) {
-    display: block;
   }
 
   #home,
