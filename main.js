@@ -34,8 +34,10 @@ const swordClashSound = new Audio("Audio/Sword-Clash.mp3");
 const arrowSound = new Audio("Audio/Arrow.mp3");
 const ramSlamSound = new Audio("Audio/Battering-Ram_Slam.mp3");
 const lancerSound = new Audio("Audio/Lancer.mp3");
+lancerSound.playbackRate = 1.3; // plays 30% faster, feels more like a fast charge
 const soldierCrySound = new Audio("Audio/Soldier-Cry.mp3");
 const logRollSound = new Audio("Audio/Log.mp3");
+const lowHpSound = new Audio("Audio/Low-HP.mp3");
 // heavy units get their own clanking sound each (made in spawnEnemy) since
 // more than one heavy can be walking at once
 
@@ -456,15 +458,16 @@ function initFortGame() {
   const SPAWN_RADIUS_X = 46;
   const SPAWN_RADIUS_Y = 44;
   const BOSS_ANGLE_DEG = 90; // fixed "front gate" direction (straight down), only the boss always uses this
+  const LOW_HP_PERCENT = 30; // plays the warning sound once HP drops below this
   const BOW_ROTATION_OFFSET = 45; // calibrates the bow image's natural diagonal rest orientation to the computed aim angle
   const BLOCK_DAMAGE_REDUCTION = 0.6; // bracing cuts incoming damage by 60%
 
   // base stats before a wave's speed/damage multipliers (and the chosen
   // difficulty's own multipliers) are applied
   const BASE_STATS = {
-    soldier: { hp: 1, speed: 0.5, stopAtRadius: 9, attackEvery: 1400, damage: 8, sound: soldierCrySound, spriteClass: "photo-icon icon-photo-soldier" },
+    soldier: { hp: 1, speed: 0.5, stopAtRadius: 9, attackEvery: 1400, damage: 8, sound: swordClashSound, spawnSound: soldierCrySound, spriteClass: "photo-icon icon-photo-soldier" },
     archer: { hp: 1, speed: 0.42, stopAtRadius: 30, attackEvery: 1800, damage: 5, sound: arrowSound, spriteClass: "photo-icon icon-photo-archer", ranged: true },
-    lancer: { hp: 1, speed: 0.85, stopAtRadius: 9, attackEvery: 1600, damage: 14, sound: lancerSound, spriteClass: "photo-icon icon-photo-lancer" },
+    lancer: { hp: 1, speed: 0.85, stopAtRadius: 9, attackEvery: 1600, damage: 14, sound: swordClashSound, spawnSound: lancerSound, spriteClass: "photo-icon icon-photo-lancer" },
     heavy: { hp: 3, speed: 0.28, stopAtRadius: 9, attackEvery: 1900, damage: 12, sound: swordClashSound, spriteClass: "photo-icon icon-photo-heavy", loopSoundSrc: "Audio/Armor-Clanking.mp3" },
     boss: { hp: 4, speed: 0.2, stopAtRadius: 11, attackEvery: 2600, damage: 20, sound: ramSlamSound, spriteClass: "photo-icon icon-photo-boss" },
   };
@@ -488,6 +491,7 @@ function initFortGame() {
   let fortHp, score, running, enemies, projectiles, nextId;
   let tickInterval, spawnInterval, waveTransitionTimeout;
   let shootReady, volleyReady, logReady;
+  let lowHpSoundPlayed = false;
   let playerName = "";
   let difficulty = "normal";
   let isBlocking = false;
@@ -503,12 +507,18 @@ function initFortGame() {
     fortHp = MAX_HP;
     score = 0;
     running = false;
+    if (enemies) {
+      enemies.forEach(function (enemy) {
+        if (enemy.loopSound) enemy.loopSound.pause();
+      });
+    }
     enemies = [];
     projectiles = [];
     nextId = 1;
     shootReady = true;
     volleyReady = true;
     logReady = true;
+    lowHpSoundPlayed = false;
     waveNumber = 0;
     waveQueue = [];
     waveActive = false;
@@ -528,9 +538,14 @@ function initFortGame() {
   function updateHud() {
     const pct = Math.max(0, (fortHp / MAX_HP) * 100);
     hpFill.style.width = pct + "%"; // UPDATE CSS PROPERTIES USING JS
-    hpFill.style.backgroundColor = pct < 30 ? "#c9605f" : "";
+    hpFill.style.backgroundColor = pct < LOW_HP_PERCENT ? "#c9605f" : "";
     hpText.textContent = fortHp + " / " + MAX_HP; // UPDATE CONTENT USING JS
     scoreEl.textContent = "Score: " + score + ", Wave " + (waveNumber || 1) + " / " + WAVES.length;
+
+    if (pct > 0 && pct < LOW_HP_PERCENT && !lowHpSoundPlayed) {
+      lowHpSoundPlayed = true;
+      playSound(lowHpSound);
+    }
   }
 
   function flashFort() {
@@ -641,6 +656,11 @@ function initFortGame() {
       loopAudio.play().catch(function () {});
       enemies[enemies.length - 1].loopSound = loopAudio;
     }
+
+    // soldier/lancer play their own cry once, right when they spawn
+    if (base.spawnSound) {
+      playSound(base.spawnSound);
+    }
   }
 
   // angle: 0 = right, 90 = down (y increases downward), matches both
@@ -730,6 +750,7 @@ function initFortGame() {
 
     // move + act on each enemy, full 2D movement toward the fort at centre
     enemies.forEach(function (enemy) {
+      if (!running) return; // fort might have just died from an earlier enemy this same tick
       const now = Date.now();
       const dx = CENTER - enemy.x;
       const dy = CENTER - enemy.y;
@@ -761,6 +782,7 @@ function initFortGame() {
 
     // move projectiles + check collisions
     projectiles.forEach(function (p) {
+      if (!running) return; // same reason as the enemy loop above
       p.x += p.dx * p.speed;
       p.y += p.dy * p.speed;
       p.el.style.left = p.x + "%"; // JS-DRIVEN CSS POSITION ANIMATION
@@ -940,10 +962,23 @@ function initFortGame() {
     }, 2500);
   }
 
+  // stops every sound tied to this game, including each enemy's own loop
+  // (heavy's clanking), so nothing keeps playing after the game is over
+  function stopAllGameSounds() {
+    [swordClashSound, arrowSound, ramSlamSound, lancerSound, soldierCrySound, logRollSound, lowHpSound].forEach(function (audioEl) {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+    });
+    enemies.forEach(function (enemy) {
+      if (enemy.loopSound) enemy.loopSound.pause();
+    });
+  }
+
   function winGame() {
     running = false;
     clearInterval(tickInterval);
     clearInterval(spawnInterval);
+    stopAllGameSounds();
     btnShoot.disabled = true;
     btnVolley.disabled = true;
     playCorrectSound();
@@ -957,6 +992,7 @@ function initFortGame() {
     clearInterval(tickInterval);
     clearInterval(spawnInterval);
     clearTimeout(waveTransitionTimeout);
+    stopAllGameSounds();
     btnShoot.disabled = true;
     btnVolley.disabled = true;
     playIncorrectSound();
