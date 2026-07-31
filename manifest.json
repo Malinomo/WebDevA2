@@ -1,11 +1,9 @@
 {
   "name": "Castles | Medieval Castle Guide",
   "short_name": "Castles",
-  "description": "An interactive guide to medieval castles — anatomy, defenses, design evolution, and a siege defense mini-game.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
-  "orientation": "any",
   "background_color": "#171d26",
   "theme_color": "#171d26",
   "icons": [
